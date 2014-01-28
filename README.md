@@ -1,0 +1,4 @@
+glin
+====
+
+Go line splitter
