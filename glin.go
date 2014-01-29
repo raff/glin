@@ -113,16 +113,32 @@ func Quote(a []string) []string {
 	return q
 }
 
+func Print(format string, a []string) {
+	printable := make([]interface{}, len(a))
+
+	for i, v := range a {
+		printable[i] = v
+	}
+
+	fmt.Printf(format, printable...)
+}
+
 func main() {
 	ifs := flag.String("ifs", " ", "input field separator")
 	ofs := flag.String("ofs", " ", "input field separator")
 	quote := flag.Bool("quote", false, "quote returned fields")
+	format := flag.String("printf", "", "output is formatted according to specified format")
+
 	flag.Parse()
 
 	pos := make([]Pos, len(flag.Args()))
 
 	for i, arg := range flag.Args() {
 		pos[i].Set(arg)
+	}
+
+	if len(*format) > 0 && !strings.HasSuffix(*format, "\n") {
+		*format += "\n"
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -159,7 +175,11 @@ func main() {
 			result = Quote(result)
 		}
 
-		// join the result according to output field separator
-		fmt.Println(strings.Join(result, *ofs))
+		if len(*format) > 0 {
+			Print(*format, result)
+		} else {
+			// join the result according to output field separator
+			fmt.Println(strings.Join(result, *ofs))
+		}
 	}
 }
