@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 var (
+	VERSION     = "0.9.0"
 	SPACES      = regexp.MustCompile("\\s+")
 	INVALID_POS = errors.New("invalid position")
 )
@@ -124,12 +126,18 @@ func Print(format string, a []string) {
 }
 
 func main() {
+	version := flag.Bool("version", false, "print version and exit")
+	quote := flag.Bool("quote", false, "quote returned fields")
 	ifs := flag.String("ifs", " ", "input field separator")
 	ofs := flag.String("ofs", " ", "input field separator")
-	quote := flag.Bool("quote", false, "quote returned fields")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("%s version %s\n", path.Base(os.Args[0]), VERSION)
+		return
+	}
 
 	pos := make([]Pos, len(flag.Args()))
 
