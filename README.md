@@ -17,5 +17,4 @@ where:
 * --quote: output fields are quoted
 * --ifs=c: the character (or string) c is used as input field separator (default space)
 * --ofs=c: the character (or string) c is used as output field separator (default space)
-
-output field list: one or more indices (or slices) of fields to return. Slices follow the Go slice convention (start:end)
+* output field list: one or more indices (or slices) of fields to return. Slices follow the Go slice convention (start:end)
