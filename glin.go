@@ -55,10 +55,8 @@ func (p *Pos) Set(s string) error {
 
 	if len(parts) == 1 {
 		// not a slice
-		if p.Start != nil {
-			v := *p.Start + 1
-			p.End = &v
-		}
+		// note: same pointer (to distinguish from *p.End == *p.Start that returns an empty slice)
+		p.End = p.Start
 	} else if len(parts[1]) > 0 {
 		v, err := strconv.Atoi(parts[1])
 		if err != nil {
@@ -88,14 +86,13 @@ func Slice(source []string, p Pos) []string {
 		start = *p.Start
 	}
 
-	if p.End == nil || *p.End >= len(source) {
+	if p.End == p.Start {
+		// this should return source[start]
+		end = start + 1
+	} else if p.End == nil || *p.End >= len(source) {
 		return source[start:]
 	} else if *p.End < 0 {
 		end = len(source) + *p.End
-
-		if end < 0 {
-			end = 0
-		}
 	} else {
 		end = *p.End
 	}
