@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 var (
+	VERSION     = "0.9.0"
 	SPACES      = regexp.MustCompile("\\s+")
 	INVALID_POS = errors.New("invalid position")
 )
@@ -55,10 +57,8 @@ func (p *Pos) Set(s string) error {
 
 	if len(parts) == 1 {
 		// not a slice
-		if p.Start != nil {
-			v := *p.Start + 1
-			p.End = &v
-		}
+		// note: same pointer (to distinguish from *p.End == *p.Start that returns an empty slice)
+		p.End = p.Start
 	} else if len(parts[1]) > 0 {
 		v, err := strconv.Atoi(parts[1])
 		if err != nil {
@@ -78,14 +78,29 @@ func Slice(source []string, p Pos) []string {
 		start = 0
 	} else if *p.Start >= len(source) {
 		return source[0:0]
+	} else if *p.Start < 0 {
+		start = len(source) + *p.Start
+
+		if start < 0 {
+			start = 0
+		}
 	} else {
 		start = *p.Start
 	}
 
-	if p.End == nil || *p.End >= len(source) {
+	if p.End == p.Start {
+		// this should return source[start]
+		end = start + 1
+	} else if p.End == nil || *p.End >= len(source) {
 		return source[start:]
+	} else if *p.End < 0 {
+		end = len(source) + *p.End
 	} else {
 		end = *p.End
+	}
+
+	if end < start {
+		end = start
 	}
 
 	return source[start:end]
@@ -109,17 +124,39 @@ func Unquote(a []string) []string {
 	return q
 }
 
+func Print(format string, a []string) {
+	printable := make([]interface{}, len(a))
+
+	for i, v := range a {
+		printable[i] = v
+	}
+
+	fmt.Printf(format, printable...)
+}
+
 func main() {
+	version := flag.Bool("version", false, "print version and exit")
+	quote := flag.Bool("quote", false, "quote returned fields")
+	unquote := flag.Bool("unquote", false, "quote returned fields")
 	ifs := flag.String("ifs", " ", "input field separator")
 	ofs := flag.String("ofs", " ", "input field separator")
-	quote := flag.Bool("quote", false, "quote returned fields")
-	unquote := flag.Bool("unquote", false, "unquote returned fields")
+	format := flag.String("printf", "", "output is formatted according to specified format")
+
 	flag.Parse()
+
+	if *version {
+		fmt.Printf("%s version %s\n", path.Base(os.Args[0]), VERSION)
+		return
+	}
 
 	pos := make([]Pos, len(flag.Args()))
 
 	for i, arg := range flag.Args() {
 		pos[i].Set(arg)
+	}
+
+	if len(*format) > 0 && !strings.HasSuffix(*format, "\n") {
+		*format += "\n"
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -160,7 +197,11 @@ func main() {
 			result = Quote(result)
 		}
 
-		// join the result according to output field separator
-		fmt.Println(strings.Join(result, *ofs))
+		if len(*format) > 0 {
+			Print(*format, result)
+		} else {
+			// join the result according to output field separator
+			fmt.Println(strings.Join(result, *ofs))
+		}
 	}
 }
