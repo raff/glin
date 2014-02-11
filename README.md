@@ -19,4 +19,8 @@ where:
 * --quote: output fields are quoted
 * --ifs=c: the character (or string) c is used as input field separator (default space)
 * --ofs=c: the character (or string) c is used as output field separator (default space)
-* output field list: one or more indices (or slices) of fields to return. Slices follow the Go slice convention (start:end)
+* output field list: one or more indices (or slices) of fields to return.
+
+also:
+* Slices follow the Go slice convention (start:end) or better, the Python slice convention (negative values are offsets from the end).
+* Field 0 is the input line (as in "awk") so the various fields are indexed from 1 to the number of fields.
