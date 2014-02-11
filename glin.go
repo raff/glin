@@ -167,15 +167,16 @@ func main() {
 		}
 
 		line := scanner.Text()
-
-		var fields, result []string
+		fields := []string{line} // $0 is the full line
 
 		// split the line according to input field separator
 		if *ifs == " " {
-			fields = SPACES.Split(strings.TrimSpace(line), -1)
+			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
-			fields = strings.Split(line, *ifs)
+			fields = append(fields, strings.Split(line, *ifs)...)
 		}
+
+		var result []string
 
 		// do some processing
 		if len(pos) > 0 {
@@ -186,7 +187,7 @@ func main() {
 				result = append(result, val)
 			}
 		} else {
-			result = fields
+			result = fields[0:1]
 		}
 
 		if *unquote {
