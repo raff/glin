@@ -14,9 +14,13 @@ import (
 )
 
 var (
-	VERSION     = "0.9.0"
+	VERSION     = "0.10.0"
 	SPACES      = regexp.MustCompile("\\s+")
 	INVALID_POS = errors.New("invalid position")
+
+	OK              = 0
+	MATCH_FOUND     = 100
+	MATCH_NOT_FOUND = 101
 )
 
 type Pos struct {
@@ -141,6 +145,7 @@ func main() {
 	ifs := flag.String("ifs", " ", "input field separator")
 	ofs := flag.String("ofs", " ", "input field separator")
 	format := flag.String("printf", "", "output is formatted according to specified format")
+	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
 
 	flag.Parse()
 
@@ -157,6 +162,14 @@ func main() {
 
 	if len(*format) > 0 && !strings.HasSuffix(*format, "\n") {
 		*format += "\n"
+	}
+
+	var match_pattern *regexp.Regexp
+	status_code := OK
+
+	if len(*matches) > 0 {
+		match_pattern = regexp.MustCompile(*matches)
+		status_code = MATCH_NOT_FOUND
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -204,5 +217,11 @@ func main() {
 			// join the result according to output field separator
 			fmt.Println(strings.Join(result, *ofs))
 		}
+
+		if match_pattern != nil && match_pattern.MatchString(line) {
+			status_code = MATCH_FOUND
+		}
 	}
+
+	os.Exit(status_code)
 }
