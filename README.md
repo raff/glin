@@ -21,6 +21,7 @@ where:
 * --ifs=c: the character (or string) c is used as input field separator (default space)
 * --ofs=c: the character (or string) c is used as output field separator (default space)
 * output field list: one or more indices (or slices) of fields to return.
+* --re=pattern: split lines according to "pattern" and return the result of pattern.FindSubmatch as fields (i.e. it returns the matched expression and groups)
 
 also:
 * Slices follow the Go slice convention (start:end) or better, the Python slice convention (negative values are offsets from the end).
