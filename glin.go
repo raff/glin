@@ -144,6 +144,7 @@ func main() {
 	unquote := flag.Bool("unquote", false, "quote returned fields")
 	ifs := flag.String("ifs", " ", "input field separator")
 	ofs := flag.String("ofs", " ", "input field separator")
+        re := flag.String("re", "", "regular expression for parsing input")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
 
@@ -164,6 +165,7 @@ func main() {
 		*format += "\n"
 	}
 
+        var split_pattern *regexp.Regexp
 	var match_pattern *regexp.Regexp
 	status_code := OK
 
@@ -171,6 +173,10 @@ func main() {
 		match_pattern = regexp.MustCompile(*matches)
 		status_code = MATCH_NOT_FOUND
 	}
+
+        if len(*re) > 0 {
+            split_pattern = regexp.MustCompile(*re)
+        }
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -183,7 +189,11 @@ func main() {
 		fields := []string{line} // $0 is the full line
 
 		// split the line according to input field separator
-		if *ifs == " " {
+                if (split_pattern != nil) {
+                        if matches := split_pattern.FindStringSubmatch(line); matches != nil {
+                            fields = matches
+                        }
+		} else if *ifs == " " {
 			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
 			fields = append(fields, strings.Split(line, *ifs)...)
