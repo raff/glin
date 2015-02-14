@@ -144,9 +144,10 @@ func main() {
 	unquote := flag.Bool("unquote", false, "quote returned fields")
 	ifs := flag.String("ifs", " ", "input field separator")
 	ofs := flag.String("ofs", " ", "input field separator")
-        re := flag.String("re", "", "regular expression for parsing input")
+	re := flag.String("re", "", "regular expression for parsing input")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
+	after := flag.String("after", "", "process line after specified tag")
 
 	flag.Parse()
 
@@ -165,7 +166,7 @@ func main() {
 		*format += "\n"
 	}
 
-        var split_pattern *regexp.Regexp
+	var split_pattern *regexp.Regexp
 	var match_pattern *regexp.Regexp
 	status_code := OK
 
@@ -174,11 +175,12 @@ func main() {
 		status_code = MATCH_NOT_FOUND
 	}
 
-        if len(*re) > 0 {
-            split_pattern = regexp.MustCompile(*re)
-        }
+	if len(*re) > 0 {
+		split_pattern = regexp.MustCompile(*re)
+	}
 
 	scanner := bufio.NewScanner(os.Stdin)
+	len_after := len(*after)
 
 	for scanner.Scan() {
 		if scanner.Err() != nil {
@@ -186,13 +188,23 @@ func main() {
 		}
 
 		line := scanner.Text()
+
+		if len_after > 0 {
+			i := strings.Index(line, *after)
+			if i < 0 {
+				continue // no match
+			}
+
+			line = line[i+len_after:]
+		}
+
 		fields := []string{line} // $0 is the full line
 
 		// split the line according to input field separator
-                if (split_pattern != nil) {
-                        if matches := split_pattern.FindStringSubmatch(line); matches != nil {
-                            fields = matches
-                        }
+		if split_pattern != nil {
+			if matches := split_pattern.FindStringSubmatch(line); matches != nil {
+				fields = matches
+			}
 		} else if *ifs == " " {
 			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
