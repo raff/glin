@@ -4,7 +4,6 @@ glin
 Go line scanner
 
 Glin is similar in concept to "awk" but offer a more limited and simplified interface.
-
 Glin reads lines from stanrd input, splits each line into fields, and writes a re-ordered list of fields.
 
 A common usage for glin is to "filter" a log file and return only a limited set of fields.
