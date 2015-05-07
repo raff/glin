@@ -143,6 +143,7 @@ func main() {
 	quote := flag.Bool("quote", false, "quote returned fields")
 	unquote := flag.Bool("unquote", false, "quote returned fields")
 	ifs := flag.String("ifs", " ", "input field separator")
+	ire := flag.String("ifs-re", "", "input field separator (as regular expression)")
 	ofs := flag.String("ofs", " ", "input field separator")
 	re := flag.String("re", "", "regular expression for parsing input")
 	format := flag.String("printf", "", "output is formatted according to specified format")
@@ -166,6 +167,7 @@ func main() {
 		*format += "\n"
 	}
 
+	var split_re *regexp.Regexp
 	var split_pattern *regexp.Regexp
 	var match_pattern *regexp.Regexp
 	status_code := OK
@@ -177,6 +179,10 @@ func main() {
 
 	if len(*re) > 0 {
 		split_pattern = regexp.MustCompile(*re)
+	}
+
+	if len(*ire) > 0 {
+		split_re = regexp.MustCompile(*ire)
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -205,6 +211,8 @@ func main() {
 			if matches := split_pattern.FindStringSubmatch(line); matches != nil {
 				fields = matches
 			}
+		} else if split_re != nil {
+			fields = append(fields, split_re.Split(line, -1)...)
 		} else if *ifs == " " {
 			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
