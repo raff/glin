@@ -146,6 +146,7 @@ func main() {
 	ire := flag.String("ifs-re", "", "input field separator (as regular expression)")
 	ofs := flag.String("ofs", " ", "input field separator")
 	re := flag.String("re", "", "regular expression for parsing input")
+	grep := flag.String("grep", "", "output only lines that match the regular expression")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
 	after := flag.String("after", "", "process line after specified tag")
@@ -170,11 +171,16 @@ func main() {
 	var split_re *regexp.Regexp
 	var split_pattern *regexp.Regexp
 	var match_pattern *regexp.Regexp
+	var grep_pattern *regexp.Regexp
 	status_code := OK
 
 	if len(*matches) > 0 {
 		match_pattern = regexp.MustCompile(*matches)
 		status_code = MATCH_NOT_FOUND
+	}
+
+	if len(*grep) > 0 {
+		grep_pattern = regexp.MustCompile(*grep)
 	}
 
 	if len(*re) > 0 {
@@ -206,16 +212,24 @@ func main() {
 
 		fields := []string{line} // $0 is the full line
 
-		// split the line according to input field separator
-		if split_pattern != nil {
+		if grep_pattern != nil {
+			if matches := grep_pattern.FindStringSubmatch(line); matches != nil {
+				fields = matches
+                        } else {
+                                continue
+                        }
+		} else if split_pattern != nil {
 			if matches := split_pattern.FindStringSubmatch(line); matches != nil {
 				fields = matches
 			}
 		} else if split_re != nil {
+                        // split line according to input regular expression
 			fields = append(fields, split_re.Split(line, -1)...)
 		} else if *ifs == " " {
+                        // split line on spaces (compact multiple spaces)
 			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
+		        // split line according to input field separator
 			fields = append(fields, strings.Split(line, *ifs)...)
 		}
 
