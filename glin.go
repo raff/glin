@@ -150,6 +150,7 @@ func main() {
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
 	after := flag.String("after", "", "process line after specified tag")
+	printline := flag.Bool("line", false, "print line numbers")
 
 	flag.Parse()
 
@@ -193,6 +194,7 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	len_after := len(*after)
+	lineno := 0
 
 	for scanner.Scan() {
 		if scanner.Err() != nil {
@@ -200,6 +202,7 @@ func main() {
 		}
 
 		line := scanner.Text()
+		lineno += 1
 
 		if len_after > 0 {
 			i := strings.Index(line, *after)
@@ -215,21 +218,21 @@ func main() {
 		if grep_pattern != nil {
 			if matches := grep_pattern.FindStringSubmatch(line); matches != nil {
 				fields = matches
-                        } else {
-                                continue
-                        }
+			} else {
+				continue
+			}
 		} else if split_pattern != nil {
 			if matches := split_pattern.FindStringSubmatch(line); matches != nil {
 				fields = matches
 			}
 		} else if split_re != nil {
-                        // split line according to input regular expression
+			// split line according to input regular expression
 			fields = append(fields, split_re.Split(line, -1)...)
 		} else if *ifs == " " {
-                        // split line on spaces (compact multiple spaces)
+			// split line on spaces (compact multiple spaces)
 			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
-		        // split line according to input field separator
+			// split line according to input field separator
 			fields = append(fields, strings.Split(line, *ifs)...)
 		}
 
@@ -253,6 +256,10 @@ func main() {
 
 		if *quote {
 			result = Quote(result)
+		}
+
+		if *printline {
+			fmt.Printf("%d: ", lineno)
 		}
 
 		if len(*format) > 0 {
