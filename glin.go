@@ -30,12 +30,16 @@ type Pos struct {
 func (p Pos) String() (result string) {
 	if p.Start != nil {
 		result = strconv.Itoa(*p.Start)
+	} else {
+		result += "FIRST"
 	}
 
-	result += ":"
+	result += " TO "
 
 	if p.End != nil {
 		result += strconv.Itoa(*p.End)
+	} else {
+		result += "LAST"
 	}
 
 	return
@@ -144,13 +148,14 @@ func main() {
 	unquote := flag.Bool("unquote", false, "quote returned fields")
 	ifs := flag.String("ifs", " ", "input field separator")
 	ire := flag.String("ifs-re", "", "input field separator (as regular expression)")
-	ofs := flag.String("ofs", " ", "input field separator")
+	ofs := flag.String("ofs", " ", "output field separator")
 	re := flag.String("re", "", "regular expression for parsing input")
 	grep := flag.String("grep", "", "output only lines that match the regular expression")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
 	after := flag.String("after", "", "process line after specified tag")
 	printline := flag.Bool("line", false, "print line numbers")
+	debug := flag.Bool("debug", false, "print debug info")
 
 	flag.Parse()
 
@@ -236,6 +241,13 @@ func main() {
 			fields = append(fields, strings.Split(line, *ifs)...)
 		}
 
+		if *debug {
+			log.Println("input fields:", fields)
+			if len(pos) > 0 {
+				log.Println("output fields:", pos)
+			}
+		}
+
 		var result []string
 
 		// do some processing
@@ -243,7 +255,7 @@ func main() {
 			result = make([]string, 0)
 
 			for _, p := range pos {
-				val := strings.Join(Slice(fields, p), *ifs)
+				val := strings.Join(Slice(fields, p), *ofs)
 				result = append(result, val)
 			}
 		} else {
