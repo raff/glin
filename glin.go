@@ -148,7 +148,8 @@ func main() {
 	re := flag.String("re", "", "regular expression for parsing input")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
-	after := flag.String("after", "", "process line after specified tag")
+	after := flag.String("after", "", "process fields in line after specified tag")
+	afterline := flag.String("after-line", "", "process lines after lines that matches")
 
 	flag.Parse()
 
@@ -187,6 +188,7 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	len_after := len(*after)
+	len_afterline := len(*afterline)
 
 	for scanner.Scan() {
 		if scanner.Err() != nil {
@@ -194,6 +196,14 @@ func main() {
 		}
 
 		line := scanner.Text()
+
+		if len_afterline > 0 {
+			if strings.Contains(line, *afterline) {
+				len_afterline = 0
+			}
+
+			continue
+		}
 
 		if len_after > 0 {
 			i := strings.Index(line, *after)
