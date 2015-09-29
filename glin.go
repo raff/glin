@@ -30,12 +30,16 @@ type Pos struct {
 func (p Pos) String() (result string) {
 	if p.Start != nil {
 		result = strconv.Itoa(*p.Start)
+	} else {
+		result += "FIRST"
 	}
 
-	result += ":"
+	result += " TO "
 
 	if p.End != nil {
 		result += strconv.Itoa(*p.End)
+	} else {
+		result += "LAST"
 	}
 
 	return
@@ -144,12 +148,15 @@ func main() {
 	unquote := flag.Bool("unquote", false, "quote returned fields")
 	ifs := flag.String("ifs", " ", "input field separator")
 	ire := flag.String("ifs-re", "", "input field separator (as regular expression)")
-	ofs := flag.String("ofs", " ", "input field separator")
+	ofs := flag.String("ofs", " ", "output field separator")
 	re := flag.String("re", "", "regular expression for parsing input")
+	grep := flag.String("grep", "", "output only lines that match the regular expression")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
 	after := flag.String("after", "", "process fields in line after specified tag")
 	afterline := flag.String("after-line", "", "process lines after lines that matches")
+	printline := flag.Bool("line", false, "print line numbers")
+	debug := flag.Bool("debug", false, "print debug info")
 
 	flag.Parse()
 
@@ -171,11 +178,16 @@ func main() {
 	var split_re *regexp.Regexp
 	var split_pattern *regexp.Regexp
 	var match_pattern *regexp.Regexp
+	var grep_pattern *regexp.Regexp
 	status_code := OK
 
 	if len(*matches) > 0 {
 		match_pattern = regexp.MustCompile(*matches)
 		status_code = MATCH_NOT_FOUND
+	}
+
+	if len(*grep) > 0 {
+		grep_pattern = regexp.MustCompile(*grep)
 	}
 
 	if len(*re) > 0 {
@@ -189,6 +201,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	len_after := len(*after)
 	len_afterline := len(*afterline)
+	lineno := 0
 
 	for scanner.Scan() {
 		if scanner.Err() != nil {
@@ -196,6 +209,7 @@ func main() {
 		}
 
 		line := scanner.Text()
+		lineno += 1
 
 		if len_afterline > 0 {
 			if strings.Contains(line, *afterline) {
@@ -216,17 +230,32 @@ func main() {
 
 		fields := []string{line} // $0 is the full line
 
-		// split the line according to input field separator
-		if split_pattern != nil {
+		if grep_pattern != nil {
+			if matches := grep_pattern.FindStringSubmatch(line); matches != nil {
+				fields = matches
+			} else {
+				continue
+			}
+		} else if split_pattern != nil {
 			if matches := split_pattern.FindStringSubmatch(line); matches != nil {
 				fields = matches
 			}
 		} else if split_re != nil {
+			// split line according to input regular expression
 			fields = append(fields, split_re.Split(line, -1)...)
 		} else if *ifs == " " {
+			// split line on spaces (compact multiple spaces)
 			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
+			// split line according to input field separator
 			fields = append(fields, strings.Split(line, *ifs)...)
+		}
+
+		if *debug {
+			log.Println("input fields:", fields)
+			if len(pos) > 0 {
+				log.Println("output fields:", pos)
+			}
 		}
 
 		var result []string
@@ -236,7 +265,7 @@ func main() {
 			result = make([]string, 0)
 
 			for _, p := range pos {
-				val := strings.Join(Slice(fields, p), *ifs)
+				val := strings.Join(Slice(fields, p), *ofs)
 				result = append(result, val)
 			}
 		} else {
@@ -249,6 +278,10 @@ func main() {
 
 		if *quote {
 			result = Quote(result)
+		}
+
+		if *printline {
+			fmt.Printf("%d: ", lineno)
 		}
 
 		if len(*format) > 0 {
