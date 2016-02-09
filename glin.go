@@ -153,7 +153,8 @@ func main() {
 	grep := flag.String("grep", "", "output only lines that match the regular expression")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
-	after := flag.String("after", "", "process line after specified tag")
+	after := flag.String("after", "", "process fields in line after specified tag")
+	afterline := flag.String("after-line", "", "process lines after lines that matches")
 	printline := flag.Bool("line", false, "print line numbers")
 	debug := flag.Bool("debug", false, "print debug info")
 
@@ -199,6 +200,7 @@ func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	len_after := len(*after)
+	len_afterline := len(*afterline)
 	lineno := 0
 
 	for scanner.Scan() {
@@ -208,6 +210,14 @@ func main() {
 
 		line := scanner.Text()
 		lineno += 1
+
+		if len_afterline > 0 {
+			if strings.Contains(line, *afterline) {
+				len_afterline = 0
+			}
+
+			continue
+		}
 
 		if len_after > 0 {
 			i := strings.Index(line, *after)
