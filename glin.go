@@ -242,9 +242,9 @@ func main() {
 		}
 
 		if *debug {
-			log.Println("input fields:", fields)
+			log.Printf("input fields: %q\n", fields)
 			if len(pos) > 0 {
-				log.Println("output fields:", pos)
+				log.Printf("output fields: %q\n", pos)
 			}
 		}
 
