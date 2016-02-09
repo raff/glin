@@ -259,7 +259,7 @@ func main() {
 				result = append(result, val)
 			}
 		} else {
-			result = fields[0:1]
+			result = fields[1:]
 		}
 
 		if *unquote {
