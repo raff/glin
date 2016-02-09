@@ -265,8 +265,7 @@ func main() {
 			result = make([]string, 0)
 
 			for _, p := range pos {
-				val := strings.Join(Slice(fields, p), *ofs)
-				result = append(result, val)
+				result = append(result, Slice(fields, p)...)
 			}
 		} else {
 			result = fields[1:]
