@@ -155,6 +155,7 @@ func main() {
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
 	after := flag.String("after", "", "process fields in line after specified tag")
 	afterline := flag.String("after-line", "", "process lines after lines that matches")
+	afterlinen := flag.Int("after-linen", 0, "process lines after n lines")
 	printline := flag.Bool("line", false, "print line numbers")
 	debug := flag.Bool("debug", false, "print debug info")
 
@@ -210,6 +211,10 @@ func main() {
 
 		line := scanner.Text()
 		lineno += 1
+
+		if *afterlinen > lineno {
+			continue
+		}
 
 		if len_afterline > 0 {
 			if strings.Contains(line, *afterline) {
