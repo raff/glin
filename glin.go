@@ -210,9 +210,10 @@ func main() {
 		}
 
 		line := scanner.Text()
+
 		lineno += 1
 
-		if *afterlinen > lineno {
+		if *afterlinen >= lineno {
 			continue
 		}
 
