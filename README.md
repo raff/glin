@@ -3,7 +3,8 @@ glin
 
 Go line scanner
 
-Glin is similar in concept to "awk" but offer a more limited and simplified interface.
+Glin is similar in concept to "awk" but offers a more limited and simplified interface.
+
 Glin reads lines from stanrd input, splits each line into fields, and writes a re-ordered list of fields.
 
 A common usage for glin is to "filter" a log file and return only a limited set of fields.
@@ -17,7 +18,7 @@ usage
 where:
 * --ifs=c: the character (or string) c is used as input field separator (default space)
 * --after=pattern: matches on lines containing pattern and process only the part of the line after pattern
-* --re=pattern: split lines according to "pattern" and return the result of pattern.FindSubmatch as fields (i.e. it returns the matched expression and groups)
+* --re=pattern: split lines according to "pattern" (as a regular expression) and return the result of pattern.FindSubmatch as fields (i.e. it returns the matched expression and groups)
 * --matches=pattern: returns 100 if any line matches the pattern, 101 otherwise (while still echoing the input)
 * --ofs=c: the character (or string) c is used as output field separator (default space)
 * --quote: output fields are quoted
