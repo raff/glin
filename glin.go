@@ -25,6 +25,7 @@ var (
 
 type Pos struct {
 	Start, End *int
+	Value      *string
 }
 
 func (p Pos) String() (result string) {
@@ -57,7 +58,8 @@ func (p *Pos) Set(s string) error {
 	if len(parts[0]) > 0 {
 		v, err := strconv.Atoi(parts[0])
 		if err != nil {
-			return err
+			p.Value = &s
+			return nil
 		}
 
 		p.Start = &v
@@ -80,6 +82,10 @@ func (p *Pos) Set(s string) error {
 }
 
 func Slice(source []string, p Pos) []string {
+	if p.Value != nil {
+		return []string{*p.Value}
+	}
+
 	var start, end int
 
 	if p.Start == nil {
