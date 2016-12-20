@@ -14,13 +14,15 @@ import (
 )
 
 var (
-	VERSION     = "0.10.0"
+	VERSION     = "0.11.0"
 	SPACES      = regexp.MustCompile("\\s+")
 	INVALID_POS = errors.New("invalid position")
 
 	OK              = 0
 	MATCH_FOUND     = 100
 	MATCH_NOT_FOUND = 101
+
+	gitCommit, buildDate string
 )
 
 type Pos struct {
@@ -168,7 +170,12 @@ func main() {
 	flag.Parse()
 
 	if *version {
-		fmt.Printf("%s version %s\n", path.Base(os.Args[0]), VERSION)
+		extra := ""
+		if gitCommit != "" {
+			extra = fmt.Sprintf(" (%.4v %v)", gitCommit, buildDate)
+		}
+
+		fmt.Printf("%s version %s%v\n", path.Base(os.Args[0]), VERSION, extra)
 		return
 	}
 
