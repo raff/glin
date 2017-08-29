@@ -153,7 +153,7 @@ func Print(format string, a []string) {
 }
 
 func MustEvaluate(expr string) *govaluate.EvaluableExpression {
-	ee, err := govaluate.NewEvaluableExpression(expr)
+	ee, err := govaluate.NewEvaluableExpressionWithFunctions(expr, funcs)
 	if err != nil {
 		log.Fatalf("%q: %v", expr, err)
 	}
@@ -196,6 +196,53 @@ func (p *Context) Set(name string, value interface{}) error {
 
 	p.vars[name] = value
 	return nil
+}
+
+func toFloat(arg interface{}) (float64, error) {
+	switch v := arg.(type) {
+	case string:
+		f, err := strconv.ParseFloat(v, 64)
+		return f, err
+	case bool:
+		if v {
+			return 1.0, nil
+		} else {
+			return 0.0, nil
+		}
+	default:
+		return v.(float64), nil
+	}
+}
+
+var funcs = map[string]govaluate.ExpressionFunction{
+	"num": func(arguments ...interface{}) (interface{}, error) {
+		if len(arguments) != 1 {
+			return nil, fmt.Errorf("- one parameter expected, got %d", len(arguments))
+		}
+
+		return toFloat(arguments[0])
+	},
+
+	"int": func(arguments ...interface{}) (interface{}, error) {
+		if len(arguments) != 1 {
+			return nil, fmt.Errorf("- one parameter expected, got %d", len(arguments))
+		}
+
+		f, err := toFloat(arguments[0])
+		return float64(int(f)), err
+	},
+
+	"len": func(arguments ...interface{}) (interface{}, error) {
+		if len(arguments) != 1 {
+			return nil, fmt.Errorf("- one parameter expected, got %d", len(arguments))
+		}
+
+		if s, ok := arguments[0].(string); ok {
+			return float64(len(s)), nil
+		}
+
+		return nil, fmt.Errorf("- input should be a string")
+	},
 }
 
 func main() {
