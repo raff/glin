@@ -11,10 +11,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/raff/govaluate"
 )
 
 var (
-	VERSION     = "0.11.0"
+	VERSION     = "0.12.0"
 	SPACES      = regexp.MustCompile("\\s+")
 	INVALID_POS = errors.New("invalid position")
 
@@ -150,6 +152,52 @@ func Print(format string, a []string) {
 	fmt.Printf(format, printable...)
 }
 
+func MustEvaluate(expr string) *govaluate.EvaluableExpression {
+	ee, err := govaluate.NewEvaluableExpression(expr)
+	if err != nil {
+		log.Fatalf("%q: %v", expr, err)
+	}
+
+	return ee
+}
+
+type Context struct {
+	vars   map[string]interface{}
+	fields []string
+}
+
+func (p *Context) Get(name string) (interface{}, error) {
+
+	if strings.HasPrefix(name, "$") {
+		n, err := strconv.Atoi(name[1:])
+		if err != nil {
+			return nil, err
+		}
+
+		if n < len(p.fields) {
+			return p.fields[n], nil
+		}
+
+		return nil, fmt.Errorf("No field %q", name)
+	}
+
+	if value, ok := p.vars[name]; ok {
+		return value, nil
+	}
+
+	return nil, fmt.Errorf("No variable %q", name)
+}
+
+func (p *Context) Set(name string, value interface{}) error {
+
+	if strings.HasPrefix(name, "$") {
+		return fmt.Errorf("Cannot override field %q", name)
+	}
+
+	p.vars[name] = value
+	return nil
+}
+
 func main() {
 	version := flag.Bool("version", false, "print version and exit")
 	quote := flag.Bool("quote", false, "quote returned fields")
@@ -166,6 +214,9 @@ func main() {
 	afterlinen := flag.Int("after-linen", 0, "process lines after n lines")
 	printline := flag.Bool("line", false, "print line numbers")
 	debug := flag.Bool("debug", false, "print debug info")
+	exprbegin := flag.String("begin", "", "expression to be executed before processing lines")
+	exprend := flag.String("end", "", "expression to be executed after processing lines")
+	exprline := flag.String("expr", "", "expression to be executed for each line")
 
 	flag.Parse()
 
@@ -189,10 +240,9 @@ func main() {
 		*format += "\n"
 	}
 
-	var split_re *regexp.Regexp
-	var split_pattern *regexp.Regexp
-	var match_pattern *regexp.Regexp
-	var grep_pattern *regexp.Regexp
+	var split_re, split_pattern, match_pattern, grep_pattern *regexp.Regexp
+	var expr_begin, expr_end, expr_line *govaluate.EvaluableExpression
+
 	status_code := OK
 
 	if len(*matches) > 0 {
@@ -212,10 +262,30 @@ func main() {
 		split_re = regexp.MustCompile(*ire)
 	}
 
+	if len(*exprbegin) > 0 {
+		expr_begin = MustEvaluate(*exprbegin)
+	}
+	if len(*exprline) > 0 {
+		expr_line = MustEvaluate(*exprline)
+	}
+	if len(*exprend) > 0 {
+		expr_end = MustEvaluate(*exprend)
+	}
+
 	scanner := bufio.NewScanner(os.Stdin)
 	len_after := len(*after)
 	len_afterline := len(*afterline)
 	lineno := 0
+
+	expr_context := Context{vars: map[string]interface{}{}}
+
+	if expr_begin != nil {
+		_, err := expr_begin.Eval(&expr_context)
+		if err != nil {
+			log.Println("error in begin", err)
+		}
+		// else, should we print the result ?
+	}
 
 	for scanner.Scan() {
 		if scanner.Err() != nil {
@@ -247,31 +317,31 @@ func main() {
 			line = line[i+len_after:]
 		}
 
-		fields := []string{line} // $0 is the full line
+		expr_context.fields = []string{line} // $0 is the full line
 
 		if grep_pattern != nil {
 			if matches := grep_pattern.FindStringSubmatch(line); matches != nil {
-				fields = matches
+				expr_context.fields = matches
 			} else {
 				continue
 			}
 		} else if split_pattern != nil {
 			if matches := split_pattern.FindStringSubmatch(line); matches != nil {
-				fields = matches
+				expr_context.fields = matches
 			}
 		} else if split_re != nil {
 			// split line according to input regular expression
-			fields = append(fields, split_re.Split(line, -1)...)
+			expr_context.fields = append(expr_context.fields, split_re.Split(line, -1)...)
 		} else if *ifs == " " {
 			// split line on spaces (compact multiple spaces)
-			fields = append(fields, SPACES.Split(strings.TrimSpace(line), -1)...)
+			expr_context.fields = append(expr_context.fields, SPACES.Split(strings.TrimSpace(line), -1)...)
 		} else {
 			// split line according to input field separator
-			fields = append(fields, strings.Split(line, *ifs)...)
+			expr_context.fields = append(expr_context.fields, strings.Split(line, *ifs)...)
 		}
 
 		if *debug {
-			log.Printf("input fields: %q\n", fields)
+			log.Printf("input fields: %q\n", expr_context.fields)
 			if len(pos) > 0 {
 				log.Printf("output fields: %q\n", pos)
 			}
@@ -284,10 +354,10 @@ func main() {
 			result = make([]string, 0)
 
 			for _, p := range pos {
-				result = append(result, Slice(fields, p)...)
+				result = append(result, Slice(expr_context.fields, p)...)
 			}
 		} else {
-			result = fields[1:]
+			result = expr_context.fields[1:]
 		}
 
 		if *unquote {
@@ -311,6 +381,23 @@ func main() {
 
 		if match_pattern != nil && match_pattern.MatchString(line) {
 			status_code = MATCH_FOUND
+		}
+
+		if expr_line != nil {
+			_, err := expr_line.Eval(&expr_context)
+			if err != nil {
+				log.Println("error in expr", err)
+			}
+			// else, should we print the result ?
+		}
+	}
+
+	if expr_end != nil {
+		res, err := expr_end.Eval(&expr_context)
+		if err != nil {
+			log.Println("error in end", err)
+		} else {
+			fmt.Println(res)
 		}
 	}
 
