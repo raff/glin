@@ -24,6 +24,8 @@ var (
 	MATCH_FOUND     = 100
 	MATCH_NOT_FOUND = 101
 
+	SET = struct{}{}
+
 	gitCommit, buildDate string
 )
 
@@ -264,6 +266,7 @@ func main() {
 	exprbegin := flag.String("begin", "", "expression to be executed before processing lines")
 	exprend := flag.String("end", "", "expression to be executed after processing lines")
 	exprline := flag.String("expr", "", "expression to be executed for each line")
+	uniq := flag.Bool("uniq", false, "print only unique lines")
 
 	flag.Parse()
 
@@ -323,6 +326,7 @@ func main() {
 	len_after := len(*after)
 	len_afterline := len(*afterline)
 	lineno := 0
+	uniques := map[string]struct{}{}
 
 	expr_context := Context{vars: map[string]interface{}{}}
 
@@ -417,6 +421,15 @@ func main() {
 
 		if *printline {
 			fmt.Printf("%d: ", lineno)
+		}
+
+		if *uniq {
+			l := strings.Join(result, " ")
+			if _, ok := uniques[l]; ok {
+				continue
+			}
+
+			uniques[l] = SET
 		}
 
 		if len(*format) > 0 {
