@@ -266,6 +266,7 @@ func main() {
 	exprbegin := flag.String("begin", "", "expression to be executed before processing lines")
 	exprend := flag.String("end", "", "expression to be executed after processing lines")
 	exprline := flag.String("expr", "", "expression to be executed for each line")
+	exprtest := flag.String("test", "", "test expression (skip line if false)")
 	uniq := flag.Bool("uniq", false, "print only unique lines")
 
 	flag.Parse()
@@ -291,7 +292,7 @@ func main() {
 	}
 
 	var split_re, split_pattern, match_pattern, grep_pattern *regexp.Regexp
-	var expr_begin, expr_end, expr_line *govaluate.EvaluableExpression
+	var expr_begin, expr_end, expr_line, expr_test *govaluate.EvaluableExpression
 
 	status_code := OK
 
@@ -320,6 +321,9 @@ func main() {
 	}
 	if len(*exprend) > 0 {
 		expr_end = MustEvaluate(*exprend)
+	}
+	if len(*exprtest) > 0 {
+		expr_test = MustEvaluate(*exprtest)
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -421,6 +425,15 @@ func main() {
 
 		if *printline {
 			fmt.Printf("%d: ", lineno)
+		}
+
+		if expr_test != nil {
+			test, err := expr_test.Eval(&expr_context)
+			if err != nil {
+				log.Println("error in expr", err)
+			} else if !test.(bool) {
+				continue
+			}
 		}
 
 		if *uniq {
