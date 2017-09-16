@@ -183,6 +183,13 @@ func (p *Context) Get(name string) (interface{}, error) {
 		return nil, fmt.Errorf("No field %q", name)
 	}
 
+	if name == "NF" {
+		if p.fields == nil {
+			return 0, nil
+		}
+		return len(p.fields) - 1, nil
+	}
+
 	if value, ok := p.vars[name]; ok {
 		return value, nil
 	}
@@ -194,6 +201,10 @@ func (p *Context) Set(name string, value interface{}) error {
 
 	if strings.HasPrefix(name, "$") {
 		return fmt.Errorf("Cannot override field %q", name)
+	}
+
+	if name == "NF" {
+		return fmt.Errorf("Cannot override NF")
 	}
 
 	p.vars[name] = value
