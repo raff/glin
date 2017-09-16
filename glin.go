@@ -428,11 +428,20 @@ func main() {
 		}
 
 		if expr_test != nil {
-			test, err := expr_test.Eval(&expr_context)
+			res, err := expr_test.Eval(&expr_context)
 			if err != nil {
 				log.Println("error in expr", err)
-			} else if !test.(bool) {
-				continue
+			} else {
+				switch test := res.(type) {
+				case bool:
+					if !test {
+						continue
+					}
+
+				default:
+					log.Println("boolean expected, got", test)
+					continue
+				}
 			}
 		}
 
