@@ -183,6 +183,13 @@ func (p *Context) Get(name string) (interface{}, error) {
 		return nil, fmt.Errorf("No field %q", name)
 	}
 
+	if name == "NF" {
+		if p.fields == nil {
+			return 0, nil
+		}
+		return len(p.fields) - 1, nil
+	}
+
 	if value, ok := p.vars[name]; ok {
 		return value, nil
 	}
@@ -194,6 +201,10 @@ func (p *Context) Set(name string, value interface{}) error {
 
 	if strings.HasPrefix(name, "$") {
 		return fmt.Errorf("Cannot override field %q", name)
+	}
+
+	if name == "NF" {
+		return fmt.Errorf("Cannot override NF")
 	}
 
 	p.vars[name] = value
@@ -266,6 +277,7 @@ func main() {
 	exprbegin := flag.String("begin", "", "expression to be executed before processing lines")
 	exprend := flag.String("end", "", "expression to be executed after processing lines")
 	exprline := flag.String("expr", "", "expression to be executed for each line")
+	exprtest := flag.String("test", "", "test expression (skip line if false)")
 	uniq := flag.Bool("uniq", false, "print only unique lines")
 
 	flag.Parse()
@@ -291,7 +303,7 @@ func main() {
 	}
 
 	var split_re, split_pattern, match_pattern, grep_pattern *regexp.Regexp
-	var expr_begin, expr_end, expr_line *govaluate.EvaluableExpression
+	var expr_begin, expr_end, expr_line, expr_test *govaluate.EvaluableExpression
 
 	status_code := OK
 
@@ -323,6 +335,9 @@ func main() {
 	}
 	if len(*exprend) > 0 {
 		expr_end = MustEvaluate(*exprend)
+	}
+	if len(*exprtest) > 0 {
+		expr_test = MustEvaluate(*exprtest)
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -424,6 +439,24 @@ func main() {
 
 		if *printline {
 			fmt.Printf("%d: ", lineno)
+		}
+
+		if expr_test != nil {
+			res, err := expr_test.Eval(&expr_context)
+			if err != nil {
+				log.Println("error in expr", err)
+			} else {
+				switch test := res.(type) {
+				case bool:
+					if !test {
+						continue
+					}
+
+				default:
+					log.Println("boolean expected, got", test)
+					continue
+				}
+			}
 		}
 
 		if *uniq {
