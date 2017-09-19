@@ -13,7 +13,7 @@ usage
 =====
 
     glin  [--ifs={input field separator}] [--after={pattern}] [--re={pattern}] [--matches={pattern}] \
-       [--ofs={output field separator}] [--quote]  [--printf={format-string] [output field list]
+       [--ofs={output field separator}] [--quote] [--uniq] [--printf={format-string] [output field list]
     
 where:
 * --ifs=c: the character (or string) c is used as input field separator (default space)
@@ -22,6 +22,7 @@ where:
 * --matches=pattern: returns 100 if any line matches the pattern, 101 otherwise (while still echoing the input)
 * --ofs=c: the character (or string) c is used as output field separator (default space)
 * --quote: output fields are quoted
+* --uniq: remove duplicate output lines
 * --printf=format: format output fields according specified format
 * output field list: one or more indices (or slices) of fields to return.
 

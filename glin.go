@@ -301,6 +301,9 @@ func main() {
 	}
 
 	if len(*grep) > 0 {
+		if !strings.ContainsAny(*grep, "()") {
+			*grep = "(" + *grep + ")"
+		}
 		grep_pattern = regexp.MustCompile(*grep)
 	}
 
