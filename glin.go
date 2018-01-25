@@ -267,9 +267,11 @@ func main() {
 	ofs := flag.String("ofs", " ", "output field separator")
 	re := flag.String("re", "", "regular expression for parsing input")
 	grep := flag.String("grep", "", "output only lines that match the regular expression")
+	contains := flag.String("contains", "", "output only lines that contains the pattern")
 	format := flag.String("printf", "", "output is formatted according to specified format")
 	matches := flag.String("matches", "", "return status code 100 if any line matches the specified pattern, 101 otherwise")
-	after := flag.String("after", "", "process fields in line after specified tag")
+	after := flag.String("after", "", "process fields in line after specified tag (remove text before tag)")
+	before := flag.String("before", "", "process fields in line before specified tag (remove text after tag)")
 	afterline := flag.String("after-line", "", "process lines after lines that matches")
 	afterlinen := flag.Int("after-linen", 0, "process lines after n lines")
 	printline := flag.Bool("line", false, "print line numbers")
@@ -377,6 +379,10 @@ func main() {
 			continue
 		}
 
+		if len(*contains) > 0 && !strings.Contains(line, *contains) {
+			continue
+		}
+
 		if len_after > 0 {
 			i := strings.Index(line, *after)
 			if i < 0 {
@@ -384,6 +390,13 @@ func main() {
 			}
 
 			line = line[i+len_after:]
+
+			if len(*before) > 0 {
+				i := strings.Index(line, *before)
+				if i >= 0 {
+					line = line[:i]
+				}
+			}
 		}
 
 		expr_context.fields = []string{line} // $0 is the full line
