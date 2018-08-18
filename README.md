@@ -12,19 +12,57 @@ A common usage for glin is to "filter" a log file and return only a limited set 
 usage
 =====
 
-    glin  [--ifs={input field separator}] [--after={pattern}] [--re={pattern}] [--matches={pattern}] \
-       [--ofs={output field separator}] [--quote] [--uniq] [--printf={format-string] [output field list]
+    glin  [options] [output field list]
     
-where:
-* --ifs=c: the character (or string) c is used as input field separator (default space)
-* --after=pattern: matches on lines containing pattern and process only the part of the line after pattern
-* --re=pattern: split lines according to "pattern" (as a regular expression) and return the result of pattern.FindSubmatch as fields (i.e. it returns the matched expression and groups)
-* --matches=pattern: returns 100 if any line matches the pattern, 101 otherwise (while still echoing the input)
-* --ofs=c: the character (or string) c is used as output field separator (default space)
-* --quote: output fields are quoted
-* --uniq: remove duplicate output lines
-* --printf=format: format output fields according specified format
-* output field list: one or more indices (or slices) of fields to return.
+    Options:
+      -after string
+            process fields in line after specified tag (remove text before tag)
+      -after-line string
+            process lines after lines that matches
+      -after-linen int
+            process lines after n lines
+      -before string
+            process fields in line before specified tag (remove text after tag)
+      -before-line string
+            process lines before lines that matches
+      -begin string
+            expression to be executed before processing lines
+      -contains string
+            output only lines that contains the pattern
+      -debug
+            print debug info
+      -end string
+            expression to be executed after processing lines
+      -expr string
+            expression to be executed for each line
+      -grep string
+            output only lines that match the regular expression
+      -ifs string
+            input field separator (default " ")
+      -ifs-re string
+            input field separator (as regular expression)
+      -line
+            print line numbers
+      -matches string
+            return status code 100 if any line matches the specified pattern, 101 otherwise
+      -ofs string
+            output field separator (default " ")
+      -printf string
+            output is formatted according to specified format
+      -quote
+            quote returned fields
+      -re string
+            regular expression for parsing input
+      -test string
+            test expression (skip line if false)
+      -uniq
+            print only unique lines
+      -unquote
+            quote returned fields
+      -version
+            print version and exit
+
+    Output field list: one or more indices (or slices) of fields to return.
 
 also:
 * Slices follow the Go slice convention (start:end) or better, the Python slice convention (negative values are offsets from the end, so -1 is the last field).
