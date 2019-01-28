@@ -242,7 +242,7 @@ var funcs = map[string]govaluate.ExpressionFunction{
 		}
 
 		f, err := toFloat(arguments[0])
-		return float64(int(f)), err
+		return int(f), err
 	},
 
 	"len": func(arguments ...interface{}) (interface{}, error) {
@@ -273,6 +273,7 @@ func main() {
 	after := flag.String("after", "", "process fields in line after specified tag (remove text before tag)")
 	before := flag.String("before", "", "process fields in line before specified tag (remove text after tag)")
 	afterline := flag.String("after-line", "", "process lines after lines that matches")
+	beforeline := flag.String("before-line", "", "process lines before lines that matches")
 	afterlinen := flag.Int("after-linen", 0, "process lines after n lines")
 	printline := flag.Bool("line", false, "print line numbers")
 	debug := flag.Bool("debug", false, "print debug info")
@@ -281,6 +282,8 @@ func main() {
 	exprline := flag.String("expr", "", "expression to be executed for each line")
 	exprtest := flag.String("test", "", "test expression (skip line if false)")
 	uniq := flag.Bool("uniq", false, "print only unique lines")
+	remove := flag.Bool("remove", false, "remove specified fields instead of selecting them")
+	pexpr := flag.Bool("print-expr", false, "print result of -expr")
 
 	flag.Parse()
 
@@ -364,7 +367,6 @@ func main() {
 		}
 
 		line := scanner.Text()
-
 		lineno += 1
 
 		if *afterlinen >= lineno {
@@ -377,6 +379,10 @@ func main() {
 			}
 
 			continue
+		}
+
+		if len(*beforeline) > 0 && strings.Contains(line, *beforeline) {
+			break
 		}
 
 		if len(*contains) > 0 && !strings.Contains(line, *contains) {
@@ -425,7 +431,11 @@ func main() {
 		if *debug {
 			log.Printf("input fields: %q\n", expr_context.fields)
 			if len(pos) > 0 {
-				log.Printf("output fields: %q\n", pos)
+				if *remove {
+					log.Printf("output fields remove: %q\n", pos)
+				} else {
+					log.Printf("output fields: %q\n", pos)
+				}
 			}
 		}
 
@@ -435,8 +445,14 @@ func main() {
 		if len(pos) > 0 {
 			result = make([]string, 0)
 
-			for _, p := range pos {
-				result = append(result, Slice(expr_context.fields, p)...)
+			if *remove {
+				for _, p := range pos {
+					result = append(result, Slice(expr_context.fields, p)...) // XXX: how to remove fields
+				}
+			} else {
+				for _, p := range pos {
+					result = append(result, Slice(expr_context.fields, p)...)
+				}
 			}
 		} else {
 			result = expr_context.fields[1:]
@@ -493,11 +509,12 @@ func main() {
 		}
 
 		if expr_line != nil {
-			_, err := expr_line.Eval(&expr_context)
+			res, err := expr_line.Eval(&expr_context)
 			if err != nil {
 				log.Println("error in expr", err)
+			} else if *pexpr {
+				fmt.Println(res)
 			}
-			// else, should we print the result ?
 		}
 	}
 
