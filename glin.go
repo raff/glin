@@ -222,6 +222,10 @@ func toFloat(arg interface{}) (float64, error) {
 		} else {
 			return 0.0, nil
 		}
+        case int:
+                return float64(v), nil
+        case int64:
+                return float64(v), nil
 	default:
 		return v.(float64), nil
 	}
