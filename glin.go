@@ -222,10 +222,10 @@ func toFloat(arg interface{}) (float64, error) {
 		} else {
 			return 0.0, nil
 		}
-        case int:
-                return float64(v), nil
-        case int64:
-                return float64(v), nil
+	case int:
+		return float64(v), nil
+	case int64:
+		return float64(v), nil
 	default:
 		return v.(float64), nil
 	}
@@ -447,8 +447,6 @@ func main() {
 
 		// do some processing
 		if len(pos) > 0 {
-			result = make([]string, 0)
-
 			if *remove {
 				for _, p := range pos {
 					result = append(result, Slice(expr_context.fields, p)...) // XXX: how to remove fields
@@ -501,6 +499,21 @@ func main() {
 			uniques[l] = SET
 		}
 
+		if expr_line != nil {
+			res, err := expr_line.Eval(&expr_context)
+			if err != nil {
+				log.Println("error in expr", err)
+			} else if *pexpr {
+				fmt.Println(res)
+			} else {
+				for i, v := range result {
+					if v == `{{expr}}` {
+						result[i] = fmt.Sprintf("%v", res)
+					}
+				}
+			}
+		}
+
 		if len(*format) > 0 {
 			Print(*format, result)
 		} else {
@@ -512,14 +525,6 @@ func main() {
 			status_code = MATCH_FOUND
 		}
 
-		if expr_line != nil {
-			res, err := expr_line.Eval(&expr_context)
-			if err != nil {
-				log.Println("error in expr", err)
-			} else if *pexpr {
-				fmt.Println(res)
-			}
-		}
 	}
 
 	if expr_end != nil {
