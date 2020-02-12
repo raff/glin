@@ -144,6 +144,33 @@ func Unquote(a []string) []string {
 	return q
 }
 
+func Unescape(s string) string {
+	parts := strings.Split(s, `\`)
+	if len(parts) == 1 {
+		return s
+	}
+
+	u := parts[0]
+
+	for _, p := range parts[1:] {
+		switch p[0] {
+		case 'n':
+			u += "\n" + p[1:]
+
+		case 'r':
+			u += "\n" + p[1:]
+
+		case 't':
+			u += "\t" + p[1:]
+
+		default:
+			u += p
+		}
+	}
+
+	return u
+}
+
 func Print(format string, a []string) {
 	printable := make([]interface{}, len(a))
 
@@ -166,6 +193,7 @@ func MustEvaluate(expr string) *govaluate.EvaluableExpression {
 type Context struct {
 	vars   map[string]interface{}
 	fields []string
+	lineno int
 }
 
 func (p *Context) Get(name string) (interface{}, error) {
@@ -190,6 +218,10 @@ func (p *Context) Get(name string) (interface{}, error) {
 		return len(p.fields) - 1, nil
 	}
 
+	if name == "NR" {
+		return p.lineno, nil
+	}
+
 	if value, ok := p.vars[name]; ok {
 		return value, nil
 	}
@@ -203,8 +235,8 @@ func (p *Context) Set(name string, value interface{}) error {
 		return fmt.Errorf("Cannot override field %q", name)
 	}
 
-	if name == "NF" {
-		return fmt.Errorf("Cannot override NF")
+	if name == "NF" || name == "NR" {
+		return fmt.Errorf("Cannot override %v", name)
 	}
 
 	p.vars[name] = value
@@ -352,7 +384,6 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	len_after := len(*after)
 	len_afterline := len(*afterline)
-	lineno := 0
 	uniques := map[string]struct{}{}
 
 	expr_context := Context{vars: map[string]interface{}{}}
@@ -371,9 +402,9 @@ func main() {
 		}
 
 		line := scanner.Text()
-		lineno += 1
+		expr_context.lineno += 1
 
-		if *afterlinen >= lineno {
+		if *afterlinen >= expr_context.lineno {
 			continue
 		}
 
@@ -469,7 +500,7 @@ func main() {
 		}
 
 		if *printline {
-			fmt.Printf("%d: ", lineno)
+			fmt.Printf("%d: ", expr_context.lineno)
 		}
 
 		if expr_test != nil {
@@ -508,7 +539,7 @@ func main() {
 			} else {
 				for i, v := range result {
 					if v == `{{expr}}` {
-						result[i] = fmt.Sprintf("%v", res)
+						result[i] = Unescape(fmt.Sprintf("%v", res))
 					}
 				}
 			}
