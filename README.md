@@ -47,12 +47,16 @@ usage
             return status code 100 if any line matches the specified pattern, 101 otherwise
       -ofs string
             output field separator (default " ")
+      -print-expr
+            print result of -expr
       -printf string
             output is formatted according to specified format
       -quote
             quote returned fields
       -re string
             regular expression for parsing input
+      -remove
+            remove specified fields instead of selecting them
       -test string
             test expression (skip line if false)
       -uniq
