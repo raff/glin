@@ -100,7 +100,6 @@ func Slice(source []string, p Pos) []string {
 		return source[0:0]
 	} else if *p.Start < 0 {
 		start = len(source) + *p.Start
-
 		if start < 0 {
 			start = 0
 		}
@@ -153,6 +152,11 @@ func Unescape(s string) string {
 	u := parts[0]
 
 	for _, p := range parts[1:] {
+		if len(p) == 0 {
+			u += "\\"
+			continue
+		}
+
 		switch p[0] {
 		case 'n':
 			u += "\n" + p[1:]
@@ -290,7 +294,53 @@ var funcs = map[string]govaluate.ExpressionFunction{
 			return float64(len(s)), nil
 		}
 
-		return nil, fmt.Errorf("- input should be a string")
+		return nil, fmt.Errorf("- expected string, got %T", arguments[0])
+	},
+
+	"substr": func(arguments ...interface{}) (interface{}, error) {
+		if len(arguments) < 2 || len(arguments) > 3 {
+			return nil, fmt.Errorf("- expected substr(str, num [, num]), got %d", len(arguments))
+		}
+
+		s, ok := arguments[0].(string)
+		if !ok {
+			return nil, fmt.Errorf("- expected string, got %T", arguments[0])
+		}
+
+		f, err := toFloat(arguments[1])
+		if err != nil {
+			return nil, fmt.Errorf("- expected numbber, got %T", arguments[1])
+		}
+
+		start := int(f)
+		slen := -1
+
+		if len(arguments) == 3 {
+			f, err := toFloat(arguments[2])
+			if err != nil {
+				return nil, fmt.Errorf("- expected numbber, got %T", arguments[2])
+			}
+
+			slen = int(f)
+		}
+
+		if start < 0 { // substr("string", -1) == substr("string", 5)
+			start = len(s) + start
+			if start < 0 {
+				start = 0
+			}
+		}
+
+		if start >= len(s) {
+			return "", nil
+		}
+
+		s = s[start:]
+		if slen >= 0 && slen < len(s) {
+			return s[:slen], nil
+		}
+
+		return s, nil
 	},
 }
 
