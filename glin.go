@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/shlex"
 	"github.com/raff/govaluate"
 )
 
@@ -348,6 +349,7 @@ func main() {
 	version := flag.Bool("version", false, "print version and exit")
 	quote := flag.Bool("quote", false, "quote returned fields")
 	unquote := flag.Bool("unquote", false, "quote returned fields")
+	shellsplit := flag.Bool("shlex", false, "split using shlex/shell-style rules")
 	ifs := flag.String("ifs", " ", "input field separator")
 	ire := flag.String("ifs-re", "", "input field separator (as regular expression)")
 	ofs := flag.String("ofs", " ", "output field separator")
@@ -492,7 +494,14 @@ func main() {
 
 		expr_context.fields = []string{line} // $0 is the full line
 
-		if grep_pattern != nil {
+		if *shellsplit {
+			var err error
+
+			expr_context.fields, err = shlex.Split(line)
+			if err != nil {
+				log.Fatal("Error in shlex.Split:", err)
+			}
+		} else if grep_pattern != nil {
 			if matches := grep_pattern.FindStringSubmatch(line); matches != nil {
 				expr_context.fields = matches
 			} else {
