@@ -269,6 +269,11 @@ func toFloat(arg interface{}) (float64, error) {
 }
 
 var funcs = map[string]govaluate.ExpressionFunction{
+	"print": func(arguments ...interface{}) (interface{}, error) {
+		fmt.Println(arguments...)
+		return nil, nil
+	},
+
 	"num": func(arguments ...interface{}) (interface{}, error) {
 		if len(arguments) != 1 {
 			return nil, fmt.Errorf("- one parameter expected, got %d", len(arguments))
