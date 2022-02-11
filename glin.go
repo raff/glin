@@ -271,7 +271,7 @@ func toFloat(arg interface{}) (float64, error) {
 var funcs = map[string]govaluate.ExpressionFunction{
 	"print": func(arguments ...interface{}) (interface{}, error) {
 		fmt.Println(arguments...)
-		return nil, nil
+		return int(0), nil
 	},
 
 	"num": func(arguments ...interface{}) (interface{}, error) {
@@ -450,7 +450,6 @@ func main() {
 		if err != nil {
 			log.Println("error in begin", err)
 		}
-		// else, should we print the result ?
 	}
 
 	for scanner.Scan() {
@@ -623,11 +622,9 @@ func main() {
 	}
 
 	if expr_end != nil {
-		res, err := expr_end.Eval(&expr_context)
+		_, err := expr_end.Eval(&expr_context)
 		if err != nil {
 			log.Println("error in end", err)
-		} else {
-			fmt.Println(res)
 		}
 	}
 
