@@ -356,6 +356,7 @@ func main() {
 	unquote := flag.Bool("unquote", false, "quote returned fields")
 	shellsplit := flag.Bool("shlex", false, "split using shlex/shell-style rules")
 	ifs := flag.String("ifs", " ", "input field separator")
+	ifn := flag.Int("ifn", -1, "maximum number of fields when splitting input (<1=all)")
 	ire := flag.String("ifs-re", "", "input field separator (as regular expression)")
 	ofs := flag.String("ofs", " ", "output field separator")
 	re := flag.String("re", "", "regular expression for parsing input")
@@ -498,6 +499,10 @@ func main() {
 
 		expr_context.fields = []string{line} // $0 is the full line
 
+		if *ifn == 0 {
+			*ifn = -1
+		}
+
 		if *shellsplit {
 			var err error
 
@@ -520,10 +525,10 @@ func main() {
 			expr_context.fields = append(expr_context.fields, split_re.Split(line, -1)...)
 		} else if *ifs == " " {
 			// split line on spaces (compact multiple spaces)
-			expr_context.fields = append(expr_context.fields, SPACES.Split(strings.TrimSpace(line), -1)...)
+			expr_context.fields = append(expr_context.fields, SPACES.Split(strings.TrimSpace(line), *ifn)...)
 		} else {
 			// split line according to input field separator
-			expr_context.fields = append(expr_context.fields, strings.Split(line, *ifs)...)
+			expr_context.fields = append(expr_context.fields, strings.SplitN(line, *ifs, *ifn)...)
 		}
 
 		if *debug {
