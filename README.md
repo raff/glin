@@ -67,7 +67,22 @@ usage
             print version and exit
 
     Output field list: one or more indices (or slices) of fields to return.
+    
+Expressions use the syntax described [here](https://github.com/Knetic/govaluate/blob/master/MANUAL.md) with the following additions:
+* It's possible to set variables:
 
-also:
+      name=expr
+
+  And use variables:
+
+      $name
+
+* The following variables are predefined (same as `awk`):
+  - $NR : current number of records / lines
+  - $NF : number of fields in the current line
+  - $0 : the current line
+  - $1 to $NF: the value of the numbered field
+
+Also:
 * Slices follow the Go slice convention (start:end) or better, the Python slice convention (negative values are offsets from the end, so -1 is the last field).
 * Field 0 is the input line (as in "awk") so the various fields are indexed from 1 to the number of fields.
