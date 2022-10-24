@@ -12,14 +12,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gobs/sortedmap"
 	"github.com/google/shlex"
 	"github.com/raff/govaluate"
 )
 
 var (
-	VERSION     = "0.12.0"
-	SPACES      = regexp.MustCompile("\\s+")
+	VERSION     = "0.13.0"
+	SPACES      = regexp.MustCompile(`\s+`)
 	INVALID_POS = errors.New("invalid position")
+
+	EXPR_VAR = regexp.MustCompile(`{{expr:([^}]+)}}`)
 
 	OK              = 0
 	MATCH_FOUND     = 100
@@ -268,6 +271,42 @@ func toFloat(arg interface{}) (float64, error) {
 	}
 }
 
+func toInt(value, vbase interface{}) (int64, error) {
+	var base = 10
+	var err error
+
+	switch b := vbase.(type) {
+	case string:
+		base, err = strconv.Atoi(b)
+		if err != nil {
+			return 0, err
+		}
+	case float64:
+		base = int(b)
+
+	default:
+		return 0, fmt.Errorf("expected number/string got %T", b)
+	}
+
+	switch v := value.(type) {
+	case string:
+		i, err := strconv.ParseInt(v, base, 64)
+		return i, err
+	case bool:
+		if v {
+			return 1, nil
+		} else {
+			return 0, nil
+		}
+	case int:
+		return int64(v), nil
+	case int64:
+		return int64(v), nil
+	default:
+		return v.(int64), nil
+	}
+}
+
 var funcs = map[string]govaluate.ExpressionFunction{
 	"print": func(arguments ...interface{}) (interface{}, error) {
 		fmt.Println(arguments...)
@@ -283,12 +322,28 @@ var funcs = map[string]govaluate.ExpressionFunction{
 	},
 
 	"int": func(arguments ...interface{}) (interface{}, error) {
+		if len(arguments) == 2 {
+			return toInt(arguments[0], arguments[1])
+		}
+
 		if len(arguments) != 1 {
 			return nil, fmt.Errorf("- one parameter expected, got %d", len(arguments))
 		}
 
 		f, err := toFloat(arguments[0])
 		return int(f), err
+	},
+
+	"format": func(arguments ...interface{}) (interface{}, error) {
+		if len(arguments) < 1 {
+			return nil, fmt.Errorf("- at least one paramenter expected")
+		}
+
+		if fm, ok := arguments[0].(string); ok {
+			return fmt.Sprintf(fm, arguments[1:]...), nil
+		}
+
+		return nil, fmt.Errorf("- expected string, got %T", arguments[0])
 	},
 
 	"len": func(arguments ...interface{}) (interface{}, error) {
@@ -315,7 +370,7 @@ var funcs = map[string]govaluate.ExpressionFunction{
 
 		f, err := toFloat(arguments[1])
 		if err != nil {
-			return nil, fmt.Errorf("- expected numbber, got %T", arguments[1])
+			return nil, fmt.Errorf("- expected number, got %T", arguments[1])
 		}
 
 		start := int(f)
@@ -324,7 +379,7 @@ var funcs = map[string]govaluate.ExpressionFunction{
 		if len(arguments) == 3 {
 			f, err := toFloat(arguments[2])
 			if err != nil {
-				return nil, fmt.Errorf("- expected numbber, got %T", arguments[2])
+				return nil, fmt.Errorf("- expected number, got %T", arguments[2])
 			}
 
 			slen = int(f)
@@ -376,6 +431,7 @@ func main() {
 	exprline := flag.String("expr", "", "expression to be executed for each line")
 	exprtest := flag.String("test", "", "test expression (skip line if false)")
 	uniq := flag.Bool("uniq", false, "print only unique lines")
+	ucount := flag.Bool("ucount", false, "print unique lines (and count)")
 	remove := flag.Bool("remove", false, "remove specified fields instead of selecting them")
 	pexpr := flag.Bool("print-expr", false, "print result of -expr")
 
@@ -442,7 +498,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	len_after := len(*after)
 	len_afterline := len(*afterline)
-	uniques := map[string]struct{}{}
+	uniques := map[string]int{}
 
 	expr_context := Context{vars: map[string]interface{}{}}
 
@@ -589,15 +645,6 @@ func main() {
 			}
 		}
 
-		if *uniq {
-			l := strings.Join(result, " ")
-			if _, ok := uniques[l]; ok {
-				continue
-			}
-
-			uniques[l] = SET
-		}
-
 		if expr_line != nil {
 			res, err := expr_line.Eval(&expr_context)
 			if err != nil {
@@ -608,8 +655,25 @@ func main() {
 				for i, v := range result {
 					if v == `{{expr}}` {
 						result[i] = Unescape(fmt.Sprintf("%v", res))
+					} else if matches := EXPR_VAR.FindStringSubmatch(v); matches != nil {
+						v, err := expr_context.Get(matches[1])
+						if err != nil {
+							log.Println("expr get", matches[1], err)
+						} else {
+							result[i] = Unescape(fmt.Sprintf("%v", v))
+						}
 					}
 				}
+			}
+		}
+
+		if *uniq || *ucount {
+			l := strings.Join(result, " ")
+			_, exists := uniques[l]
+			uniques[l]++
+
+			if exists {
+				continue
 			}
 		}
 
@@ -631,6 +695,18 @@ func main() {
 		if err != nil {
 			log.Println("error in end", err)
 		}
+	}
+
+	if *ucount {
+		sorted := sortedmap.AsSortedByValue(uniques, true)
+		total := 0
+
+		for _, kv := range sorted {
+			fmt.Println(kv.Value, kv.Key)
+			total += kv.Value
+		}
+
+		fmt.Println(total, "TOTAL COUNT")
 	}
 
 	os.Exit(status_code)

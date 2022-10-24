@@ -37,6 +37,8 @@ usage
             expression to be executed for each line
       -grep string
             output only lines that match the regular expression
+      -ifn int
+            maximum number of fields when splitting input (<1=all) (default -1)
       -ifs string
             input field separator (default " ")
       -ifs-re string
@@ -57,8 +59,12 @@ usage
             regular expression for parsing input
       -remove
             remove specified fields instead of selecting them
+      -shlex
+            split using shlex/shell-style rules
       -test string
             test expression (skip line if false)
+      -ucount
+            print unique lines (and count)
       -uniq
             print only unique lines
       -unquote
@@ -66,7 +72,7 @@ usage
       -version
             print version and exit
 
-    Output field list: one or more indices (or slices) of fields to return.
+    Output field list: one or more indices (or slices) of fields to return. Also, use `{{expr}}` to return the current value of `-expr` or `{{expr:varname}}` to return the value of variable `varname`.
     
 Expressions use the syntax described [here](https://github.com/Knetic/govaluate/blob/master/MANUAL.md) with the following additions:
 * It's possible to set variables:
