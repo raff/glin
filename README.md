@@ -89,6 +89,14 @@ Expressions use the syntax described [here](https://github.com/Knetic/govaluate/
   - $0 : the current line
   - $1 to $NF: the value of the numbered field
 
+* The following functions are available:
+  - print(args...) : print one or more arguments
+  - format(fmt, args...) : format one or more arguments according to `fmt` (like `sprintf`)
+  - num("string") : convert `string` to float, to apply numeric operations
+  - int("string") : convert `string` to int, to apply numberic operations
+  - len("string") : return length of `string`
+  - substr("string", start, [len]) : return substring of `string` starting from `start` (truncate to `len` characters if `len is specified)
+
 Also:
 * Slices follow the Go slice convention (start:end) or better, the Python slice convention (negative values are offsets from the end, so -1 is the last field).
 * Field 0 is the input line (as in "awk") so the various fields are indexed from 1 to the number of fields.
