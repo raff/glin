@@ -588,6 +588,7 @@ func main() {
 		}
 
 		if *debug {
+			log.Printf("field separator: %q expr separator: %q\n", *ifs, split_re)
 			log.Printf("input fields: %q\n", expr_context.fields)
 			if len(pos) > 0 {
 				if *remove {
